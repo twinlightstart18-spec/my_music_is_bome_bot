@@ -1,6 +1,27 @@
 import os
+from flask import Flask
+from threading import Thread
 import telebot
 import yt_dlp
+app = Flask('')
+
+
+@app.route('/')
+def home():
+  return 'I am alive'
+
+
+def run():
+  app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+
+def keep_alive():
+  t = Thread(target=run)
+  t.start()
+
+
+# Flask ဆာဗာကို စတင်ရန်
+keep_alive()
 
 TOKEN = '9133089113:AAGN38pan03p0cbszmhjed4qVMsWtA88tjU'
 bot = telebot.TeleBot(TOKEN)
