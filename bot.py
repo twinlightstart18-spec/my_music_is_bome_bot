@@ -40,17 +40,20 @@ def download_and_send_music(message):
     sent_msg = bot.reply_to(message, f"🔍 '{query}' ကို ရှာဖွေနေပါပြီ၊ ခဏစောင့်ပါ...")
 
     ydl_opts = {
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '96',
-        }],
-        'outtmpl': '%(id)s.%(ext)s',
-        'default_search': 'ytsearch1',
-        'noplaylist': True,
-        'quiet': True,
+    'format': 'bestaudio/best',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '96',
+    }],
+    'outtmpl': '%(id)s.%(ext)s',
+    'default_search': 'ytsearch1',
+    'noplaylist': True,
+    'quiet': True,
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
+}
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
