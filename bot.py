@@ -3,27 +3,32 @@ from flask import Flask
 from threading import Thread
 import telebot
 import yt_dlp
+
 app = Flask('')
 
 
 @app.route('/')
 def home():
-  return 'I am alive'
+    return 'I am alive'
 
 
 def run():
-  app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
 
 
 def keep_alive():
-  t = Thread(target=run)
-  t.start()
+    t = Thread(target=run)
+    t.start()
 
 
 # Flask ဆာဗာကို စတင်ရန်
 keep_alive()
 
-TOKEN = '9133089113:AAGN38pan03p0cbszmhjed4qVMsWtA88tjU'
+# Render ၏ Environment Variable မှ TOKEN ကို အလိုအလျောက် လှမ်းယူခြင်း
+TOKEN = os.getenv('TOKEN')
+if not TOKEN:
+    raise ValueError("No TOKEN found in environment variables!")
+
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
@@ -40,24 +45,24 @@ def download_and_send_music(message):
     sent_msg = bot.reply_to(message, f"🔍 '{query}' ကို ရှာဖွေနေပါပြီ၊ ခဏစောင့်ပါ...")
 
     ydl_opts = {
-    'format': 'bestaudio/best',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '96',
-    }],
-    'outtmpl': '%(id)s.%(ext)s',
-    'default_search': 'ytsearch1',
-    'noplaylist': True,
-    'quiet': True,
-    'http_headers': {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '96',
+        }],
+        'outtmpl': '%(id)s.%(ext)s',
+        'default_search': 'ytsearch1',
+        'noplaylist': True,
+        'quiet': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
     }
-}
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(query, download=False) # ပထမဆုံး result ရှိမရှိ စစ်ဆေးရန်
+            info = ydl.extract_info(query, download=False)
             if 'entries' in info and len(info['entries']) > 0:
                 info = ydl.extract_info(query, download=True)
                 if 'entries' in info:
