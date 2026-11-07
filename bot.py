@@ -116,6 +116,6 @@ def download_and_send_music(message):
     )
 
 
-bot.remove_webhook()
-print('Bot စတင်အလုပ်လုပ်နေပါပြီ...')
-bot.infinity_polling()
+if __name__ == '__main__':
+  port = int(os.environ.get('PORT', 10000))
+  app.run(host='0.0.0.0', port=port)
