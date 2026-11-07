@@ -1,13 +1,21 @@
 import os
-from flask import Flask
+from flask import Flask, request
 from threading import Thread
 import telebot
 import yt_dlp
-import shutil  # <-- ၁။ ဤနေရာတွင် shutil ကို import လုပ်ပါ
+import shutil
 
 app = Flask('')
 
+# ၁။ TOKEN နှင့် bot ကို ထိပ်ဆုံးပိုင်းတွင် အရင်ဆုံး သတ်မှတ်ပါ
+TOKEN = os.getenv('TOKEN')
+if not TOKEN:
+  raise ValueError('No TOKEN found in environment variables!')
 
+bot = telebot.TeleBot(TOKEN)
+
+
+# ၂။ TOKEN သတ်မှတ်ပြီးမှ Webhook Route ကို ရေးပါ
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
   if request.headers.get('content-type') == 'application/json':
@@ -18,8 +26,13 @@ def webhook():
   return 'Forbidden', 403
 
 
+@app.route('/')
+def home():
+  return 'I am alive'
+
+
 def run():
-  app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+  app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
 
 
 def keep_alive():
@@ -30,13 +43,7 @@ def keep_alive():
 # Flask ဆာဗာကို စတင်ရန်
 keep_alive()
 
-# Render ၏ Environment Variable မှ TOKEN ကို အလိုအလျောက် လှမ်းယူခြင်း
-TOKEN = os.getenv('TOKEN')
-if not TOKEN:
-  raise ValueError("No TOKEN found in environment variables!")
-
-# ---------------------------------------------------------
-# ၂။ ဤနေရာတွင် Secret File ကို /tmp/ သို့ ကူးယူမည့် ကုဒ်ကို ထည့်ပါ
+# ၃။ Secret File ကို /tmp/ သို့ ကူးယူခြင်း
 ORIGINAL_COOKIE = '/etc/secrets/cookies.txt'
 COOKIE_FILE = '/tmp/cookies.txt'
 
@@ -44,9 +51,6 @@ if os.path.exists(ORIGINAL_COOKIE):
   shutil.copy(ORIGINAL_COOKIE, COOKIE_FILE)
 elif os.path.exists('cookies.txt'):
   shutil.copy('cookies.txt', COOKIE_FILE)
-# ---------------------------------------------------------
-
-bot = telebot.TeleBot(TOKEN)
 
 
 @bot.message_handler(commands=['start'])
@@ -68,7 +72,7 @@ def download_and_send_music(message):
 
   ydl_opts = {
       'format': 'bestaudio/best',
-      'cookiefile': COOKIE_FILE,  # <-- ၃။ ဤနေရာတွင် COOKIE_FILE ကို သုံးပါ
+      'cookiefile': COOKIE_FILE,
       'postprocessors': [{
           'key': 'FFmpegExtractAudio',
           'preferredcodec': 'mp3',
@@ -122,7 +126,6 @@ def download_and_send_music(message):
 
 
 if __name__ == '__main__':
-  # Render ၏ External URL ကို ယူ၍ Telegram သို့ Webhook ချိတ်ဆက်ခြင်း
   render_url = os.environ.get('RENDER_EXTERNAL_URL')
   if render_url:
     bot.remove_webhook()
