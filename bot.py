@@ -1,44 +1,55 @@
 import os
-from flask import Flask, request
+from flask import Flask
+from threading import Thread
 import telebot
 import yt_dlp
+import shutil  # <-- ၁။ ဤနေရာတွင် shutil ကို import လုပ်ပါ
 
-TOKEN = os.getenv("TOKEN")
+app = Flask('')
+
+
+@app.route('/')
+def home():
+  return 'I am alive'
+
+
+def run():
+  app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+
+def keep_alive():
+  t = Thread(target=run)
+  t.start()
+
+
+# Flask ဆာဗာကို စတင်ရန်
+keep_alive()
+
+# Render ၏ Environment Variable မှ TOKEN ကို အလိုအလျောက် လှမ်းယူခြင်း
+TOKEN = os.getenv('TOKEN')
 if not TOKEN:
   raise ValueError("No TOKEN found in environment variables!")
 
+# ---------------------------------------------------------
+# ၂။ ဤနေရာတွင် Secret File ကို /tmp/ သို့ ကူးယူမည့် ကုဒ်ကို ထည့်ပါ
+ORIGINAL_COOKIE = '/etc/secrets/cookies.txt'
+COOKIE_FILE = '/tmp/cookies.txt'
+
+if os.path.exists(ORIGINAL_COOKIE):
+  shutil.copy(ORIGINAL_COOKIE, COOKIE_FILE)
+elif os.path.exists('cookies.txt'):
+  shutil.copy('cookies.txt', COOKIE_FILE)
+# ---------------------------------------------------------
+
 bot = telebot.TeleBot(TOKEN)
-app = Flask(__name__)
-
-# Render Secret Files လမ်းကြောင်း (Local တွင် cookies.txt နှင့် Render တွင် /etc/secrets/cookies.txt)
-COOKIE_FILE = (
-    "/etc/secrets/cookies.txt"
-    if os.path.exists("/etc/secrets/cookies.txt")
-    else "cookies.txt"
-)
 
 
-@app.route("/")
-def home():
-  return "Bot is running!"
-
-
-@app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
-  if request.headers.get("content-type") == "application/json":
-    json_string = request.get_data().decode("utf-8")
-    update = telebot.types.Update.de_json(json_string)
-    bot.process_new_updates([update])
-    return "", 200
-  return "Forbidden", 403
-
-
-@bot.message_handler(commands=["start"])
+@bot.message_handler(commands=['start'])
 def send_welcome(message):
   welcome_text = (
-      "မင်္ဂလာပါ! ဒီ Bot ကနေ YouTube က သီချင်းတွေကို ရှာဖွေပြီး Audio ဖိုင်အနေနဲ့"
-      " ပို့ပေးနိုင်ပါတယ်။\n\nကျေးဇူးပြု၍ လိုချင်တဲ့ သီချင်းနာမည် (သို့) YouTube"
-      " Link ကို ပို့ပေးပါ။"
+      'မင်္ဂလာပါ! ဒီ Bot ကနေ YouTube က သီချင်းတွေကို ရှာဖွေပြီး Audio ဖိုင်အနေနဲ့'
+      ' ပို့ပေးနိုင်ပါတယ်။\n\nကျေးဇူးပြု၍ လိုချင်တဲ့ သီချင်းနာမည် (သို့) YouTube'
+      ' Link ကို ပို့ပေးပါ။'
   )
   bot.reply_to(message, welcome_text)
 
@@ -51,28 +62,28 @@ def download_and_send_music(message):
   )
 
   ydl_opts = {
-      "format": "bestaudio/best",
-      "cookiefile": COOKIE_FILE,
-      "postprocessors": [{
-          "key": "FFmpegExtractAudio",
-          "preferredcodec": "mp3",
-          "preferredquality": "96",
+      'format': 'bestaudio/best',
+      'cookiefile': COOKIE_FILE,  # <-- ၃။ ဤနေရာတွင် COOKIE_FILE ကို သုံးပါ
+      'postprocessors': [{
+          'key': 'FFmpegExtractAudio',
+          'preferredcodec': 'mp3',
+          'preferredquality': '96',
       }],
-      "outtmpl": "%(id)s.%(ext)s",
-      "default_search": "ytsearch1",
-      "noplaylist": True,
-      "quiet": True,
+      'outtmpl': '%(id)s.%(ext)s',
+      'default_search': 'ytsearch1',
+      'noplaylist': True,
+      'quiet': True,
   }
   try:
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
       info = ydl.extract_info(query, download=False)
-      if "entries" in info and len(info["entries"]) > 0:
+      if 'entries' in info and len(info['entries']) > 0:
         info = ydl.extract_info(query, download=True)
-        if "entries" in info:
-          info = info["entries"][0]
+        if 'entries' in info:
+          info = info['entries'][0]
 
         filename = f"{info['id']}.mp3"
-        title = info.get("title", "Audio")
+        title = info.get('title', 'Audio')
 
         bot.edit_message_text(
             f"📥 '{title}' ကို ပို့ဆောင်နေပါပြီ...",
@@ -80,7 +91,7 @@ def download_and_send_music(message):
             message_id=sent_msg.message_id,
         )
 
-        with open(filename, "rb") as audio:
+        with open(filename, 'rb') as audio:
           bot.send_audio(message.chat.id, audio, title=title)
 
         bot.delete_message(message.chat.id, sent_msg.message_id)
@@ -91,7 +102,7 @@ def download_and_send_music(message):
         bot.edit_message_text(
             (
                 f"❌ '{query}' နဲ့ ပတ်သက်တဲ့ သီချင်း မတွေ့ရှိပါ။"
-                " ကျေးဇူးပြု၍ နာမည်အမှန်ကို အသစ်ပြန်ပို့ပေးပါ။"
+                ' ကျေးဇူးပြု၍ နာမည်အမှန်ကို အသစ်ပြန်ပို့ပေးပါ။'
             ),
             chat_id=message.chat.id,
             message_id=sent_msg.message_id,
@@ -99,19 +110,12 @@ def download_and_send_music(message):
 
   except Exception as e:
     bot.edit_message_text(
-        f"❌ သီချင်းရယူရာတွင် အမှားအယွင်းရှိနေပါသည်: {str(e)}",
+        f'❌ သီချင်းရယူရာတွင် အမှားအယွင်းရှိနေပါသည်: {str(e)}',
         chat_id=message.chat.id,
         message_id=sent_msg.message_id,
     )
 
 
-if __name__ == "__main__":
-  # Render ၏ URL ကို အလိုအလျောက် ယူ၍ Webhook ချိတ်ဆက်ခြင်း
-  render_url = os.environ.get("RENDER_EXTERNAL_URL")
-  if render_url:
-    bot.remove_webhook()
-    bot.set_webhook(url=f"{render_url}/{TOKEN}")
-    print(f"Webhook set to: {render_url}/{TOKEN}")
-
-  port = int(os.environ.get("PORT", 10000))
-  app.run(host="0.0.0.0", port=port)
+bot.remove_webhook()
+print('Bot စတင်အလုပ်လုပ်နေပါပြီ...')
+bot.infinity_polling()
