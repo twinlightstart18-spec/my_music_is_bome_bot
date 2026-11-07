@@ -117,5 +117,12 @@ def download_and_send_music(message):
 
 
 if __name__ == '__main__':
+  # Render ၏ External URL ကို ယူ၍ Telegram သို့ Webhook ချိတ်ဆက်ခြင်း
+  render_url = os.environ.get('RENDER_EXTERNAL_URL')
+  if render_url:
+    bot.remove_webhook()
+    bot.set_webhook(url=f'{render_url}/{TOKEN}')
+    print(f'Webhook set to: {render_url}/{TOKEN}')
+
   port = int(os.environ.get('PORT', 10000))
   app.run(host='0.0.0.0', port=port)
