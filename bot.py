@@ -71,18 +71,24 @@ def download_and_send_music(message):
   )
 
   ydl_opts = {
-      'format': 'bestaudio/best',
-      'cookiefile': COOKIE_FILE,
-      'postprocessors': [{
-          'key': 'FFmpegExtractAudio',
-          'preferredcodec': 'mp3',
-          'preferredquality': '96',
-      }],
-      'outtmpl': '%(id)s.%(ext)s',
-      'default_search': 'ytsearch1',
-      'noplaylist': True,
-      'quiet': True,
-  }
+        'format': 'bestaudio/best',
+        'cookiefile': COOKIE_FILE,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '96',
+        }],
+        'outtmpl': '%(id)s.%(ext)s',
+        'default_search': 'ytsearch1',
+        'noplaylist': True,
+        'quiet': True,
+        # YouTube ၏ Bot Detection ကျော်လွှားရန် ထပ်တိုးရန်များ
+        'extractor-args': {'youtube': {'player-client': ['android', 'web']}},
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        'no_warnings': True,
+        'socket_timeout': 30,
+    }
   try:
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
       info = ydl.extract_info(query, download=False)
