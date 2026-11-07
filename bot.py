@@ -8,9 +8,14 @@ import shutil  # <-- ၁။ ဤနေရာတွင် shutil ကို import 
 app = Flask('')
 
 
-@app.route('/')
-def home():
-  return 'I am alive'
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+  if request.headers.get('content-type') == 'application/json':
+    json_string = request.get_data().decode('utf-8')
+    update = telebot.types.Update.de_json(json_string)
+    bot.process_new_updates([update])
+    return '', 200
+  return 'Forbidden', 403
 
 
 def run():
