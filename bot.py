@@ -86,5 +86,6 @@ def download_and_send_music(message):
     except Exception as e:
         bot.edit_message_text(f"❌ သီချင်းရယူရာတွင် အမှားအယွင်းရှိနေပါသည်: {str(e)}", chat_id=message.chat.id, message_id=sent_msg.message_id)
 
+bot.remove_webhook()
 print("Bot စတင်အလုပ်လုပ်နေပါပြီ...")
 bot.infinity_polling()
